@@ -1,31 +1,31 @@
 {
 	"_reusableBaseText": {
-		"cancel": "Cancel",
+		"cancel": "취소",
 		"codeNodeEditor": {
 			"linter": {
-				"useJson": "Access the properties of an item under `.json`, e.g. `item.json`"
+				"useJson": "`.json` 항목의 속성에 액세스합니다. 예: `item.json`"
 			},
 			"completer": {
-				"all": "Returns an array of the node's output items",
-				"first": "Returns the first item output by the node",
-				"last": "Returns the last item output by the node",
-				"itemMatching": "Returns the matching item, i.e. the one used to produce the item in the current node at the specified index."
+				"all": "노드의 출력 항목 배열을 반환합니다.",
+				"first": "노드에서 첫 번째 항목을 반환합니다.",
+				"last": "노드에서 마지막 항목을 반환합니다.",
+				"itemMatching": "현재 노드에서 지정된 인덱스에 있는 항목을 반환합니다."
 			}
 		},
-		"name": "Name",
-		"save": "Save",
-		"dismiss": "Dismiss",
-		"unlimited": "Unlimited",
-		"activate": "Activate",
-		"error": "Error"
+		"name": "이름",
+		"save": "저장",
+		"dismiss": "해제",
+		"unlimited": "무제한",
+		"activate": "활성화",
+		"error": "오류"
 	},
 	"_reusableDynamicText": {
-		"readMore": "Read more",
-		"learnMore": "Learn more",
-		"moreInfo": "More info",
+		"readMore": "더 보기",
+		"learnMore": "자세히 알아보기",
+		"moreInfo": "추가 정보",
 		"oauth2": {
-			"clientId": "Client ID",
-			"clientSecret": "Client Secret"
+			"clientId": "클라이언트 ID",
+			"clientSecret": "클라이언트 시크릿"
 		}
 	},
 	"generic.annotations": "Annotations",
@@ -1029,8 +1029,8 @@
 	"mainSidebar.showMessage.handleSelect2.title": "Workflow created",
 	"mainSidebar.showMessage.handleSelect3.title": "Workflow created",
 	"mainSidebar.showMessage.stopExecution.title": "Execution stopped",
-	"mainSidebar.templates": "Templates",
-	"mainSidebar.workflows": "Workflows",
+	"mainSidebar.templates": "템플릿",
+	"mainSidebar.workflows": "워크플로우",
 	"mainSidebar.workflows.readOnlyEnv.tooltip": "Protected instances prevent editing workflows (recommended for production environments). {link}",
 	"mainSidebar.workflows.readOnlyEnv.tooltip.link": "More info",
 	"mainSidebar.executions": "Executions",
