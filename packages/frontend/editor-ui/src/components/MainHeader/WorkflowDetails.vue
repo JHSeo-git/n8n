@@ -21,7 +21,6 @@ import WorkflowTagsDropdown from '@/components/WorkflowTagsDropdown.vue';
 import InlineTextEdit from '@/components/InlineTextEdit.vue';
 import BreakpointsObserver from '@/components/BreakpointsObserver.vue';
 import WorkflowHistoryButton from '@/components/MainHeader/WorkflowHistoryButton.vue';
-import CollaborationPane from '@/components/MainHeader/CollaborationPane.vue';
 
 import { useRootStore } from '@/stores/root.store';
 import { useSettingsStore } from '@/stores/settings.store';
@@ -52,7 +51,6 @@ import type {
 } from '@/Interface';
 import { useI18n } from '@/composables/useI18n';
 import { useTelemetry } from '@/composables/useTelemetry';
-import type { BaseTextKey } from '@/plugins/i18n';
 import { useNpsSurveyStore } from '@/stores/npsSurvey.store';
 import { usePageRedirectionHelper } from '@/composables/usePageRedirectionHelper';
 import { ProjectTypes } from '@/types/projects.types';
@@ -645,7 +643,7 @@ function showCreateWorkflowSuccessToast(id?: string) {
 					:workflow-permissions="workflowPermissions"
 				/>
 			</span>
-			<EnterpriseEdition :features="[EnterpriseEditionFeature.Sharing]">
+			<!-- <EnterpriseEdition :features="[EnterpriseEditionFeature.Sharing]">
 				<div :class="$style.group">
 					<CollaborationPane v-if="!isNewWorkflow" />
 					<N8nButton
@@ -683,7 +681,7 @@ function showCreateWorkflowSuccessToast(id?: string) {
 						</template>
 					</N8nTooltip>
 				</template>
-			</EnterpriseEdition>
+			</EnterpriseEdition> -->
 			<div :class="$style.group">
 				<SaveButton
 					type="primary"
