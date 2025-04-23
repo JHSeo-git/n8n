@@ -18,7 +18,18 @@ git clone ...
 - pnpm
 - vscode
 
-### 3. devcontainer 실행
+### 3. local 실행
+
+docker compose 실행
+
+```bash
+docker compose up -d
+```
+
+<details>
+<summary>devcontainer 사용 시</summary>
+
+### 3-2. devcontainer 실행 (devcontainer 사용 시 필요)
 
 > Cursor IDE에서는 devcontainer가 정상적으로 실행되지 않습니다.
 
@@ -62,26 +73,36 @@ devcontainer 진입 시 postCreateCommand, preAttachCommand를 통해 `pnpm inst
 
 devcontainer내에 vscode에 필요한 플러그인을 설치합니다.(`vue`, `biome`, ...등)
 
-### 2. Installation
+</details>
+
+### 4. Installation
 
 ```bash
 pnpm i
+# SSL 에러 시
+# NODE_EXTRA_CA_CERTS=company.pem pnpm install
 ```
 
-### 3. build
+### 5. .env
+
+```bash
+cp .env.example .env
+```
+
+### 6. build
 
 ```bash
 pnpm build
 ```
 
-### 4. Start
+### 7. Start
 
 ```bash
 # localhost:5678
 pnpm start
 ```
 
-### 5. dev mode
+### 8. dev mode
 
 hot reloading이 가능한 개발 모드
 
@@ -94,7 +115,7 @@ pnpm dev
 
 > packages/frontend/editor-ui/src/plugins/i18n/docs/README.md
 
-서비스 화면 Repository인 frontend/editor-ui에 i18n 적용합니다.
+서비스 화면에 다국어처리를 위해 frontend/editor-ui에 i18n 파일을 추가합니다.
 
 default 는 [en.json](../packages/frontend/editor-ui/src/plugins/i18n/locales/en.json) 입니다.
 KR 다국어를 위해 [kr.json](../packages/frontend/editor-ui/src/plugins/i18n/locales/kr.json) 를 추가하여 사용합니다.
@@ -103,4 +124,3 @@ KR 다국어를 위해 [kr.json](../packages/frontend/editor-ui/src/plugins/i18n
 ## Deployment
 
 See [docker/images/n8n-bc/README.md](../docker/images/n8n-bc/README.md)
-
