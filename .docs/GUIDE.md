@@ -37,7 +37,7 @@ vscode를 실행하여 다음 절차대로 진행합니다.
 
 > [!Note]
 > rancher desktop(그외 비슷한 프로그램)에서 container 메모리 사이즈를 넉넉하게 설정합니다.(권장 16GB이상)
-> ![rancher desktop 메모리 설정](./rancher-desktop-memory.png)
+> ![rancher desktop 메모리 설정](./images/rancher-desktop-memory.png)
 
 #### 3-0. plugin 설치
 
@@ -65,7 +65,7 @@ drwxr-xr-x   43 node     node          1376 Apr 22 01:05 ..
 vscode 왼쪽 하단 파란색 `><` 아이콘을 눌러 `Reopen container`를 누릅니다.
 또는 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>를 눌러 `Dev container: Reopen container`를 실행합니다.
 
-![vscode devcontainer 위치](./vscode-devcontainer.png)
+![vscode devcontainer 위치](./images/vscode-devcontainer.png)
 
 #### 3-3. prepare
 
