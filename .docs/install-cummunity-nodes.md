@@ -1,4 +1,4 @@
-# Install Custom Nodes
+# Install Community Nodes
 
 - https://docs.n8n.io/integrations/community-nodes/installation/gui-install/
 
