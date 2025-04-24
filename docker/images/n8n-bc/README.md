@@ -1,7 +1,6 @@
 # n8n - Custom Image
 
-Dockerfile which allows to package up the local n8n code into
-a docker image.
+Dockerfile which allows to package up the local n8n code into a docker image.
 
 ## Usage
 
