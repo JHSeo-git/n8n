@@ -62,7 +62,7 @@ const localeOptions = ref<Array<{ name: string; label: BaseTextKey }>>([
 	},
 	{
 		name: 'kr',
-		label: 'settings.personal.languages.kr',
+		label: 'settings.personal.languages.ko',
 	},
 ]);
 

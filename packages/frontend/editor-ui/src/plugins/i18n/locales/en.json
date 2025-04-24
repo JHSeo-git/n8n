@@ -2838,7 +2838,7 @@
 	"settings.personal.theme.dark": "Dark theme",
 	"settings.personal.languages": "Languages",
 	"settings.personal.languages.en": "English",
-	"settings.personal.languages.kr": "Korean",
+	"settings.personal.languages.ko": "Korean",
 	"settings.personal.mfa.button.disabled.infobox": "Two-factor authentication is currently disabled.",
 	"settings.personal.mfa.button.enabled.infobox": "Two-factor authentication is currently enabled.",
 	"settings.personal.mfa.button.enabled": "Enable 2FA",

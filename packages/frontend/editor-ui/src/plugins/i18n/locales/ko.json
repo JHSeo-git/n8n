@@ -2839,7 +2839,7 @@
 	"settings.personal.theme.dark": "다크 테마",
 	"settings.personal.languages": "언어",
 	"settings.personal.languages.en": "영어",
-	"settings.personal.languages.kr": "한국어",
+	"settings.personal.languages.ko": "한국어",
 	"settings.personal.mfa.button.disabled.infobox": "2단계 인증이 현재 비활성화되어 있습니다.",
 	"settings.personal.mfa.button.enabled.infobox": "2단계 인증이 현재 활성화되어 있습니다.",
 	"settings.personal.mfa.button.enabled": "2FA 활성화",
