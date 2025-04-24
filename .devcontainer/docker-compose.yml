@@ -1,15 +1,17 @@
 volumes:
-  postgres-data:
+  n8n-postgres-data:
 
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - n8n-postgres-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_PASSWORD=password
+    ports:
+      - 5432:5432
 
   n8n:
     build:
@@ -22,3 +24,4 @@ services:
       DB_POSTGRESDB_HOST: postgres
       DB_TYPE: postgresdb
       DB_POSTGRESDB_PASSWORD: password
+    network_mode: service:postgres

@@ -8,12 +8,15 @@
 		"type=bind,source=${localEnv:HOME}/.ssh,target=/home/node/.ssh,consistency=cached",
 		"type=bind,source=${localEnv:HOME}/.n8n,target=/home/node/.n8n,consistency=cached"
 	],
-	"forwardPorts": [8080, 5678],
+	"forwardPorts": [8080, 5678, 5432],
 	"postCreateCommand": "corepack prepare --activate && pnpm install",
 	"postAttachCommand": "pnpm build",
 	"customizations": {
 		"codespaces": {
 			"openFiles": ["CONTRIBUTING.md"]
 		}
+	},
+	"containerEnv": {
+		"NODE_EXTRA_CA_CERTS": "/etc/ssl/certs/ca-certificates.crt"
 	}
 }

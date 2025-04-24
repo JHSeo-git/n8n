@@ -120,6 +120,7 @@ function onTidyUp() {
 	svg {
 		width: 16px;
 		height: 16px;
+		overflow: visible;
 	}
 }
 </style>

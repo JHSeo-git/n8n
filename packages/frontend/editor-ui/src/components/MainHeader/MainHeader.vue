@@ -10,7 +10,6 @@ import {
 	STICKY_NODE_TYPE,
 	VIEWS,
 	WORKFLOW_EVALUATION_EXPERIMENT,
-	N8N_MAIN_GITHUB_REPO_URL,
 } from '@/constants';
 import { useExecutionsStore } from '@/stores/executions.store';
 import { useNDVStore } from '@/stores/ndv.store';
@@ -24,7 +23,6 @@ import type { RouteLocation, RouteLocationRaw } from 'vue-router';
 import { useRoute, useRouter } from 'vue-router';
 
 import { useLocalStorage } from '@vueuse/core';
-import GithubButton from 'vue-github-button';
 
 const router = useRouter();
 const route = useRoute();
@@ -89,9 +87,6 @@ const onWorkflowPage = computed(() => !!(route.meta.nodeView || route.meta.keepW
 const readOnly = computed(() => sourceControlStore.preferences.branchReadOnly);
 const isEnterprise = computed(
 	() => settingsStore.isQueueModeEnabled && settingsStore.isWorkerViewAvailable,
-);
-const showGitHubButton = computed(
-	() => !isEnterprise.value && !settingsStore.settings.inE2ETests && !githubButtonHidden.value,
 );
 
 watch(route, (to, from) => {
@@ -239,25 +234,6 @@ function hideGithubButton() {
 					:active="workflow.active"
 					:read-only="readOnly"
 				/>
-				<div v-if="showGitHubButton" :class="[$style['github-button'], 'hidden-sm-and-down']">
-					<div :class="$style['github-button-container']">
-						<GithubButton
-							:href="N8N_MAIN_GITHUB_REPO_URL"
-							:data-color-scheme="uiStore.appliedTheme"
-							data-size="large"
-							data-show-count="true"
-							:aria-label="locale.baseText('editor.mainHeader.githubButton.label')"
-						>
-							{{ locale.baseText('generic.star') }}
-						</GithubButton>
-						<N8nIcon
-							:class="$style['close-github-button']"
-							icon="times-circle"
-							size="medium"
-							@click="hideGithubButton"
-						/>
-					</div>
-				</div>
 			</div>
 			<TabBar
 				v-if="onWorkflowPage"
