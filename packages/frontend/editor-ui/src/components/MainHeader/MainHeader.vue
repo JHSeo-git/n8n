@@ -23,6 +23,7 @@ import type { RouteLocation, RouteLocationRaw } from 'vue-router';
 import { useRoute, useRouter } from 'vue-router';
 
 import { useLocalStorage } from '@vueuse/core';
+import type { FolderShortInfo } from '@/Interface';
 
 const router = useRouter();
 const route = useRoute();
@@ -88,6 +89,17 @@ const readOnly = computed(() => sourceControlStore.preferences.branchReadOnly);
 const isEnterprise = computed(
 	() => settingsStore.isQueueModeEnabled && settingsStore.isWorkerViewAvailable,
 );
+
+const parentFolderForBreadcrumbs = computed<FolderShortInfo | undefined>(() => {
+	if (!workflow.value.parentFolder) {
+		return undefined;
+	}
+	return {
+		id: workflow.value.parentFolder.id,
+		name: workflow.value.parentFolder.name,
+		parentFolder: workflow.value.parentFolder.parentFolderId ?? undefined,
+	};
+});
 
 watch(route, (to, from) => {
 	syncTabsWithRoute(to, from);
@@ -213,9 +225,6 @@ async function navigateToExecutionsView(openInNewTab: boolean) {
 	}
 }
 
-function hideGithubButton() {
-	githubButtonHidden.value = true;
-}
 </script>
 
 <template>
@@ -233,6 +242,7 @@ function hideGithubButton() {
 					:scopes="workflow.scopes"
 					:active="workflow.active"
 					:read-only="readOnly"
+					:current-folder="parentFolderForBreadcrumbs"
 				/>
 			</div>
 			<TabBar
@@ -264,17 +274,19 @@ function hideGithubButton() {
 .top-menu {
 	position: relative;
 	display: flex;
+	height: var(--navbar--height);
 	align-items: center;
 	font-size: 0.9em;
 	font-weight: var(--font-weight-regular);
-	overflow: auto;
+	overflow-x: auto;
+	overflow-y: hidden;
 }
 
 .github-button {
 	display: flex;
 	align-items: center;
 	align-self: stretch;
-	padding: var(--spacing-5xs) var(--spacing-m) 0;
+	padding: var(--spacing-5xs) var(--spacing-m);
 	background-color: var(--color-background-xlight);
 	border-left: var(--border-width-base) var(--border-style-base) var(--color-foreground-base);
 }
