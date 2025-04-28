@@ -4,7 +4,6 @@ ARG NODE_VERSION=20
 FROM --platform=linux/amd64 n8nio/base:${NODE_VERSION} AS builder
 
 # Add the company CA certificate to the image
-USER root
 COPY company.pem /usr/local/share/ca-certificates
 RUN update-ca-certificates
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
