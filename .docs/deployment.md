@@ -1,5 +1,6 @@
 # Deployment
 
+> [docker/images/n8n-bc/README.md](../docker/images/n8n-bc/README.md)
 > https://github.com/n8n-io/n8n-hosting/blob/main/kubernetes/README.md
 
 공식 문서에서 kubernetes 환경으로 가이드 되어 있고, 단일 컨테이너를 사용한다고 가정하여 가이드 합니다.

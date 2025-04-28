@@ -120,7 +120,6 @@ pnpm dev
 default 는 [en.json](../packages/frontend/editor-ui/src/plugins/i18n/locales/en.json) 입니다.
 KR 다국어를 위해 [ko.json](../packages/frontend/editor-ui/src/plugins/i18n/locales/ko.json) 를 추가하여 사용합니다.
 
-
 ## Deployment
 
-See [docker/images/n8n-bc/README.md](../docker/images/n8n-bc/README.md)
+[deployment.md](./deployment.md) 참고
