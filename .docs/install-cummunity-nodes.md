@@ -5,3 +5,4 @@
 ## Install Nodes
 
 - n8n-nodes-mcp: https://www.npmjs.com/package/n8n-nodes-mcp
+- n8n-nodes-globals: https://www.npmjs.com/package/n8n-nodes-globals

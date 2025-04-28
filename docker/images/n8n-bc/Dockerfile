@@ -6,7 +6,8 @@ FROM --platform=linux/amd64 n8nio/base:${NODE_VERSION} AS builder
 # Build the application from source
 WORKDIR /src
 COPY . /src
-RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store --mount=type=cache,id=pnpm-metadata,target=/root/.cache/pnpm/metadata DOCKER_BUILD=true pnpm install --frozen-lockfile
+RUN chown -R node:node /src && \
+	--mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store --mount=type=cache,id=pnpm-metadata,target=/root/.cache/pnpm/metadata DOCKER_BUILD=true pnpm install --frozen-lockfile
 RUN pnpm build
 
 # Delete all dev dependencies
@@ -26,6 +27,8 @@ ENV NODE_ENV=production
 
 ARG N8N_RELEASE_TYPE=dev
 ENV N8N_RELEASE_TYPE=${N8N_RELEASE_TYPE}
+
+# TODO: install docker or ...
 
 WORKDIR /home/node
 COPY --from=builder /compiled /usr/local/lib/node_modules/n8n
@@ -57,6 +60,11 @@ RUN \
 	ln -s /usr/local/lib/node_modules/n8n/bin/n8n /usr/local/bin/n8n && \
 	mkdir .n8n && \
 	chown node:node .n8n
+
+# install pre-installed community nodes
+RUN mkdir .n8n/nodes && \
+	cd .n8n/nodes && \
+	npm i n8n-nodes-mcp n8n-nodes-globals
 
 ENV SHELL /bin/sh
 USER node

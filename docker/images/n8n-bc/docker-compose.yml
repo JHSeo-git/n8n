@@ -1,0 +1,31 @@
+volumes:
+  n8n_bc_db_data:
+  n8n_bc_data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - n8n_bc_db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=n8n
+      - POSTGRES_PASSWORD=password
+    ports:
+      - 15432:5432
+
+  n8n:
+    # build:
+    #   context: ../../../.
+    #   dockerfile: Dockerfile
+    image: n8n-bc:latest
+    volumes:
+      - n8n_bc_data:/home/node/.n8n
+    env_file:
+      - ../../../.env
+    environment:
+      - DB_POSTGRESDB_HOST=postgres
+    depends_on:
+      - postgres
+    ports:
+      - 15678:5678
