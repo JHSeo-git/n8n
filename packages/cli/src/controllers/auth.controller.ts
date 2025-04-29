@@ -3,6 +3,7 @@ import { Body, Get, Post, Query, RestController } from '@n8n/decorators';
 import { isEmail } from 'class-validator';
 import { Response } from 'express';
 import { Logger } from 'n8n-core';
+import jwt from 'jsonwebtoken';
 
 import { handleEmailLogin, handleLdapLogin } from '@/auth';
 import { AuthService } from '@/auth/auth.service';
@@ -45,10 +46,41 @@ export class AuthController {
 		res: Response,
 		@Body payload: LoginRequestDto,
 	): Promise<PublicUser | undefined> {
-		const { emailOrLdapLoginId, password, mfaCode, mfaRecoveryCode } = payload;
+		const { emailOrLdapLoginId, password, mfaCode, mfaRecoveryCode, lilToken } = payload;
 
+		console.log('Received /login request:');
+
+		// LIL 토큰이 있는 경우
+		if (lilToken) {
+			try {
+				console.log('LIL token received:', lilToken);
+				if (typeof lilToken !== 'string') {
+					throw new AuthError('LIL token is required');
+				}
+				const decoded = jwt.verify(lilToken, process.env.N8N_USER_MANAGEMENT_JWT_SECRET || '');
+				if (typeof decoded === 'string') {
+					throw new AuthError('Invalid LIL token payload');
+				}
+				if (decoded.iss === 'lil.lgcns.com') {
+					const email = decoded.email as string;
+					const user = await this.userRepository.findOne({ where: { email } });
+					if (!user) {
+						res.redirect(
+							`/signup?email=${email}&firstName=${decoded.given_name}&lastName=${decoded.family_name}`,
+						);
+						return undefined;
+					}
+					this.authService.issueCookie(res, user, req.browserId);
+					return await this.userService.toPublic(user, { posthog: this.postHog, withScopes: true });
+				}
+			} catch (error: any) {
+				this.logger.error('LIL token verification failed:', { error });
+				throw new AuthError('Invalid LIL token');
+			}
+		}
+
+		// 기존 로그인 로직
 		let user: User | undefined;
-
 		let usedAuthenticationMethod = getCurrentAuthenticationMethod();
 
 		if (usedAuthenticationMethod === 'email' && !isEmail(emailOrLdapLoginId)) {

@@ -123,7 +123,7 @@ export const schema = {
 
 	userManagement: {
 		jwtSecret: {
-			doc: 'Set a specific JWT secret (optional - n8n can generate one)', // Generated @ start.ts
+			doc: 'Set a specific JWT secret (optional - n8n can generate one)',
 			format: String,
 			default: '',
 			env: 'N8N_USER_MANAGEMENT_JWT_SECRET',
@@ -139,6 +139,26 @@ export const schema = {
 			format: Number,
 			default: 0,
 			env: 'N8N_USER_MANAGEMENT_JWT_REFRESH_TIMEOUT_HOURS',
+		},
+		lil: {
+			enabled: {
+				doc: 'Whether to enable LIL authentication',
+				format: Boolean,
+				default: false,
+				env: 'N8N_LIL_ENABLED',
+			},
+			issuer: {
+				doc: 'LIL token issuer',
+				format: String,
+				default: 'lil.lgcns.com',
+				env: 'N8N_LIL_ISSUER',
+			},
+			audience: {
+				doc: 'LIL token audience',
+				format: String,
+				default: 'n8n',
+				env: 'N8N_LIL_AUDIENCE',
+			},
 		},
 
 		/**

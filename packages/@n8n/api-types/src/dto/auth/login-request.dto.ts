@@ -11,4 +11,5 @@ export class LoginRequestDto extends Z.class({
 	password: z.string().min(1),
 	mfaCode: z.string().optional(),
 	mfaRecoveryCode: z.string().optional(),
+	lilToken: z.string().optional(),
 }) {}
