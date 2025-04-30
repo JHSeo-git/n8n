@@ -28,7 +28,7 @@ ENV NODE_ENV=production
 ARG N8N_RELEASE_TYPE=dev
 ENV N8N_RELEASE_TYPE=${N8N_RELEASE_TYPE}
 
-# TODO: install docker or ...
+# TODO: install docker?
 
 WORKDIR /home/node
 COPY --from=builder /compiled /usr/local/lib/node_modules/n8n

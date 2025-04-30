@@ -11,8 +11,11 @@ services:
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=n8n
     ports:
       - 15432:5432
+    networks:
+      - n8n-docker-network
 
   n8n:
     # build:
@@ -21,11 +24,19 @@ services:
     image: n8n-bc:latest
     volumes:
       - n8n_bc_data:/home/node/.n8n
+      - ./company.pem:/usr/local/share/ca-certificates/company.pem
     env_file:
       - ../../../.env
     environment:
       - DB_POSTGRESDB_HOST=postgres
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
     depends_on:
       - postgres
     ports:
       - 15678:5678
+    networks:
+      - n8n-docker-network
+
+networks:
+  n8n-docker-network:
+    driver: bridge
