@@ -37,10 +37,10 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
 			const decoded = jwt.verify(token, process.env.N8N_USER_MANAGEMENT_JWT_SECRET || '');
 
 			// LIL 토큰인 경우 추가 검증
-			if (decoded.iss === 'lil.lgcns.com') {
-				// LIL 토큰 검증 로직 추가
-				// 예: LIL 서버에 토큰 검증 요청 등
-			}
+			// if (decoded.iss === 'lil.lgcns.com') {
+			// 	// LIL 토큰 검증 로직 추가
+			// 	// 예: LIL 서버에 토큰 검증 요청 등
+			// }
 
 			req.user = decoded;
 			next();

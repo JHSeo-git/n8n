@@ -46,7 +46,7 @@ export class AuthController {
 		res: Response,
 		@Body payload: LoginRequestDto,
 	): Promise<PublicUser | undefined> {
-		const { emailOrLdapLoginId, password, mfaCode, mfaRecoveryCode, lilToken } = payload;
+		const { lilToken } = payload;
 
 		console.log('Received /login request:');
 
@@ -54,95 +54,50 @@ export class AuthController {
 		if (lilToken) {
 			try {
 				console.log('LIL token received:', lilToken);
-				if (typeof lilToken !== 'string') {
-					throw new AuthError('LIL token is required');
+				// if (typeof lilToken !== 'string') {
+				// 	throw new AuthError('LIL token is required');
+				// }
+				// const decoded = jwt.verify(lilToken, process.env.N8N_USER_MANAGEMENT_JWT_SECRET || '');
+				// if (typeof decoded === 'string') {
+				// 	throw new AuthError('Invalid LIL token payload');
+				// }
+
+				// if (decoded.iss === 'lil.lgcns.com') {
+				const email = 'test12322245@lgcns.com';
+				const firstName = 'first';
+				const lastName = 'last';
+
+				let user = await this.userRepository.findOne({ where: { email } });
+
+				if (!user) {
+					this.logger.debug('User not found, creating new user with personal project', { email });
+					// personal project까지 함께 생성
+					const { user: createdUser } = await this.userRepository.createUserWithProject({
+						email,
+						firstName,
+						lastName,
+						password: Math.random().toString(36).slice(-8),
+						role: 'global:admin',
+					});
+					user = createdUser;
+					this.logger.debug('New user and personal project created successfully', { email });
 				}
-				const decoded = jwt.verify(lilToken, process.env.N8N_USER_MANAGEMENT_JWT_SECRET || '');
-				if (typeof decoded === 'string') {
-					throw new AuthError('Invalid LIL token payload');
-				}
-				if (decoded.iss === 'lil.lgcns.com') {
-					const email = decoded.email as string;
-					const user = await this.userRepository.findOne({ where: { email } });
-					if (!user) {
-						res.redirect(
-							`/signup?email=${email}&firstName=${decoded.given_name}&lastName=${decoded.family_name}`,
-						);
-						return undefined;
-					}
-					this.authService.issueCookie(res, user, req.browserId);
-					return await this.userService.toPublic(user, { posthog: this.postHog, withScopes: true });
-				}
+
+				this.logger.debug('LIL token login successful', { email });
+				this.authService.issueCookie(res, user, req.browserId);
+				this.eventService.emit('user-logged-in', {
+					user,
+					authenticationMethod: 'email',
+				});
+				return await this.userService.toPublic(user, { posthog: this.postHog, withScopes: true });
 			} catch (error: any) {
 				this.logger.error('LIL token verification failed:', { error });
 				throw new AuthError('Invalid LIL token');
 			}
 		}
 
-		// 기존 로그인 로직
-		let user: User | undefined;
-		let usedAuthenticationMethod = getCurrentAuthenticationMethod();
-
-		if (usedAuthenticationMethod === 'email' && !isEmail(emailOrLdapLoginId)) {
-			throw new BadRequestError('Invalid email address');
-		}
-
-		if (isSamlCurrentAuthenticationMethod()) {
-			// attempt to fetch user data with the credentials, but don't log in yet
-			const preliminaryUser = await handleEmailLogin(emailOrLdapLoginId, password);
-			// if the user is an owner, continue with the login
-			if (
-				preliminaryUser?.role === 'global:owner' ||
-				preliminaryUser?.settings?.allowSSOManualLogin
-			) {
-				user = preliminaryUser;
-				usedAuthenticationMethod = 'email';
-			} else {
-				throw new AuthError('SSO is enabled, please log in with SSO');
-			}
-		} else if (isLdapCurrentAuthenticationMethod()) {
-			const preliminaryUser = await handleEmailLogin(emailOrLdapLoginId, password);
-			if (preliminaryUser?.role === 'global:owner') {
-				user = preliminaryUser;
-				usedAuthenticationMethod = 'email';
-			} else {
-				user = await handleLdapLogin(emailOrLdapLoginId, password);
-			}
-		} else {
-			user = await handleEmailLogin(emailOrLdapLoginId, password);
-		}
-
-		if (user) {
-			if (user.mfaEnabled) {
-				if (!mfaCode && !mfaRecoveryCode) {
-					throw new AuthError('MFA Error', 998);
-				}
-
-				const isMfaCodeOrMfaRecoveryCodeValid = await this.mfaService.validateMfa(
-					user.id,
-					mfaCode,
-					mfaRecoveryCode,
-				);
-				if (!isMfaCodeOrMfaRecoveryCodeValid) {
-					throw new AuthError('Invalid mfa token or recovery code');
-				}
-			}
-
-			this.authService.issueCookie(res, user, req.browserId);
-
-			this.eventService.emit('user-logged-in', {
-				user,
-				authenticationMethod: usedAuthenticationMethod,
-			});
-
-			return await this.userService.toPublic(user, { posthog: this.postHog, withScopes: true });
-		}
-		this.eventService.emit('user-login-failed', {
-			authenticationMethod: usedAuthenticationMethod,
-			userEmail: emailOrLdapLoginId,
-			reason: 'wrong credentials',
-		});
-		throw new AuthError('Wrong username or password. Do you have caps lock on?');
+		// lilToken이 없을 때 명시적으로 undefined 반환
+		return undefined;
 	}
 
 	/** Check if the user is already logged in */

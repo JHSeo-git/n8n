@@ -2,6 +2,7 @@ import { Body, Post, RestController } from '@n8n/decorators';
 import { Response } from 'express';
 import { Logger } from 'n8n-core';
 import { Container } from '@n8n/di';
+import jwt from 'jsonwebtoken';
 
 import { AuthService } from '@/auth/auth.service';
 import { UserRepository } from '@/databases/repositories/user.repository';
@@ -43,14 +44,16 @@ export class SignupController {
 		// LIL 토큰이 있는 경우
 		if (lilToken) {
 			try {
-				const decoded = jwt.verify(
-					lilToken,
-					process.env.N8N_USER_MANAGEMENT_JWT_SECRET || '',
-				) as jwt.JwtPayload;
+				this.logger.debug('Processing LIL token signup attempt', { email });
+
+				const decoded = jwt.verify(lilToken, process.env.N8N_USER_MANAGEMENT_JWT_SECRET || '');
+				if (typeof decoded === 'string') {
+					throw new AuthError('Invalid LIL token payload');
+				}
 
 				if (decoded.iss === 'lil.lgcns.com' && decoded.email === email) {
 					// LIL 토큰이 유효한 경우 사용자 생성
-					const user = await this.userService.create({
+					const newUser = this.userRepository.create({
 						email,
 						firstName,
 						lastName,
@@ -58,27 +61,32 @@ export class SignupController {
 						role: 'global:member',
 					});
 
+					this.logger.debug('Creating new user from LIL token', { email });
+					const user = await this.userRepository.save(newUser);
+
 					this.authService.issueCookie(res, user, req.browserId);
 					return await this.userService.toPublic(user);
 				}
 			} catch (error) {
-				this.logger.error('LIL token verification failed:', { error });
+				this.logger.error('LIL token verification failed during signup:', { error });
 				throw new AuthError('Invalid LIL token');
 			}
 		}
 
 		// 일반 회원가입 처리
 		if (!password) {
-			throw new BadRequestError('Password is required');
+			throw new BadRequestError('Password is required for regular signup');
 		}
 
-		const user = await this.userService.create({
+		const newUser = this.userRepository.create({
 			email,
 			firstName,
 			lastName,
 			password,
 			role: 'global:member',
 		});
+
+		const user = await this.userRepository.save(newUser);
 
 		this.authService.issueCookie(res, user, req.browserId);
 		return await this.userService.toPublic(user);
