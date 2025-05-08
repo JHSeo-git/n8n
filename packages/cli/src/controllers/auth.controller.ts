@@ -1,14 +1,11 @@
 import { LoginRequestDto, ResolveSignupTokenQueryDto } from '@n8n/api-types';
 import { Body, Get, Post, Query, RestController } from '@n8n/decorators';
-import { isEmail } from 'class-validator';
 import { Response } from 'express';
-import { Logger } from 'n8n-core';
 import jwt from 'jsonwebtoken';
+import { Logger } from 'n8n-core';
 
-import { handleEmailLogin, handleLdapLogin } from '@/auth';
 import { AuthService } from '@/auth/auth.service';
 import { RESPONSE_ERROR_MESSAGES } from '@/constants';
-import type { User } from '@/databases/entities/user';
 import { UserRepository } from '@/databases/repositories/user.repository';
 import { AuthError } from '@/errors/response-errors/auth.error';
 import { BadRequestError } from '@/errors/response-errors/bad-request.error';
@@ -20,11 +17,6 @@ import { MfaService } from '@/mfa/mfa.service';
 import { PostHogClient } from '@/posthog';
 import { AuthenticatedRequest, AuthlessRequest } from '@/requests';
 import { UserService } from '@/services/user.service';
-import {
-	getCurrentAuthenticationMethod,
-	isLdapCurrentAuthenticationMethod,
-	isSamlCurrentAuthenticationMethod,
-} from '@/sso.ee/sso-helpers';
 
 @RestController()
 export class AuthController {
@@ -54,43 +46,59 @@ export class AuthController {
 		if (lilToken) {
 			try {
 				console.log('LIL token received:', lilToken);
-				// if (typeof lilToken !== 'string') {
-				// 	throw new AuthError('LIL token is required');
-				// }
-				// const decoded = jwt.verify(lilToken, process.env.N8N_USER_MANAGEMENT_JWT_SECRET || '');
-				// if (typeof decoded === 'string') {
-				// 	throw new AuthError('Invalid LIL token payload');
-				// }
 
-				// if (decoded.iss === 'lil.lgcns.com') {
-				const email = 'test12322245@lgcns.com';
-				const firstName = 'first';
-				const lastName = 'last';
+				// "Bearer " 접두사 제거
+				const token = typeof lilToken === 'string' ? lilToken.replace(/^Bearer\s/, '') : '';
+
+				// const secret = 'fda423948d197bf3b804c6b812e44a646c366a86a47b5214957e43265efab88b';
+				// const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] }) as {
+				// 	sub?: string;
+				// 	nickname?: string;
+				// } | null;
+				// const decoded = jwt.verify(token, secret) as { sub?: string; nickname?: string } | null;
+
+				// payload만 decode (서명 검증 없이)
+				const decoded = jwt.decode(token) as { sub?: string; nickname?: string } | null;
+
+				if (!decoded?.sub || !decoded?.nickname) {
+					throw new AuthError('Invalid LIL token payload');
+				}
+
+				// payload에서 값 추출
+				// const email = decoded.sub + '@lgcns.com'; // 예시: sub를 이메일로 변환
+				// const firstName = decoded.nickname || 'first';
+				// const lastName = '';
+
+				const email = 'liltest@lgcns.com'; // 예시: sub를 이메일로 변환
+				const firstName = decoded.nickname || 'first';
+				const lastName = '';
+
+				console.log('firstName:', firstName);
+				console.log('lastName:', lastName);
 
 				let user = await this.userRepository.findOne({ where: { email } });
 
 				if (!user) {
-					this.logger.debug('User not found, creating new user with personal project', { email });
-					// personal project까지 함께 생성
+					console.log('User not found, creating new user with personal project', { email });
 					const { user: createdUser } = await this.userRepository.createUserWithProject({
 						email,
 						firstName,
 						lastName,
 						password: Math.random().toString(36).slice(-8),
-						role: 'global:admin',
+						role: 'global:member',
 					});
 					user = createdUser;
-					this.logger.debug('New user and personal project created successfully', { email });
+					console.log('New user and personal project created successfully', { email });
 				}
 
-				this.logger.debug('LIL token login successful', { email });
+				console.log('LIL token login successful', { email });
 				this.authService.issueCookie(res, user, req.browserId);
 				this.eventService.emit('user-logged-in', {
 					user,
 					authenticationMethod: 'email',
 				});
 				return await this.userService.toPublic(user, { posthog: this.postHog, withScopes: true });
-			} catch (error: any) {
+			} catch (error: unknown) {
 				this.logger.error('LIL token verification failed:', { error });
 				throw new AuthError('Invalid LIL token');
 			}

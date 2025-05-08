@@ -593,44 +593,13 @@ export function useWorkflowHelpers(options: { router: ReturnType<typeof useRoute
 			);
 			nodeData.parameters = nodeParameters !== null ? nodeParameters : {};
 
-			// Add the node credentials if there are some set and if they should be displayed
-			if (node.credentials !== undefined && nodeType.credentials !== undefined) {
-				const saveCredentials: INodeCredentials = {};
-				for (const nodeCredentialTypeName of Object.keys(node.credentials)) {
-					if (
-						nodeHelpers.hasProxyAuth(node) ||
-						Object.keys(node.parameters).includes('genericAuthType')
-					) {
-						saveCredentials[nodeCredentialTypeName] = node.credentials[nodeCredentialTypeName];
-						continue;
-					}
-
-					const credentialTypeDescription = nodeType.credentials
-						// filter out credentials with same name in different node versions
-						.filter((c) => nodeHelpers.displayParameter(node.parameters, c, '', node))
-						.find((c) => c.name === nodeCredentialTypeName);
-
-					if (credentialTypeDescription === undefined) {
-						// Credential type is not know so do not save
-						continue;
-					}
-
-					if (!nodeHelpers.displayParameter(node.parameters, credentialTypeDescription, '', node)) {
-						// Credential should not be displayed so do also not save
-						continue;
-					}
-
-					saveCredentials[nodeCredentialTypeName] = node.credentials[nodeCredentialTypeName];
-				}
-
-				// Set credential property only if it has content
-				if (Object.keys(saveCredentials).length !== 0) {
-					nodeData.credentials = saveCredentials;
-				}
-			}
+			// credentials 정보를 아예 포함하지 않음
+			// if (node.credentials !== undefined && nodeType.credentials !== undefined) {
+			//   ... (기존 credentials 저장 로직 주석처리)
+			// }
 		} else {
 			// Node-Type is not known so save the data as it is
-			nodeData.credentials = node.credentials;
+			// nodeData.credentials = node.credentials; // credentials 저장하지 않음
 			nodeData.parameters = node.parameters;
 			if (nodeData.color !== undefined) {
 				nodeData.color = node.color;
@@ -651,7 +620,6 @@ export function useWorkflowHelpers(options: { router: ReturnType<typeof useRoute
 		if (![undefined, ''].includes(node.notes)) {
 			nodeData.notes = node.notes;
 		}
-
 		return nodeData;
 	}
 
