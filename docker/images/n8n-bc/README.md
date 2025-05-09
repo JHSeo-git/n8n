@@ -8,6 +8,7 @@ Execute the following in the n8n `root` folder:
 
 ```bash
 docker build -t aoaiaiplayground.azurecr.io/axpg/n8n -f docker/images/n8n-bc/Dockerfile .
+docker build --platform linux/amd64 -t aoaiaiplayground.azurecr.io/axpg/n8n -f docker/images/n8n-bc/Dockerfile.local .
 # docker build -t core.harbor.local/bc/n8n-bc -f docker/images/n8n-bc/Dockerfile .
 ```
 
