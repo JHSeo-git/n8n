@@ -37,11 +37,12 @@ ENV N8N_RELEASE_TYPE=${N8N_RELEASE_TYPE}
 COPY company.pem /usr/local/share/ca-certificates
 RUN update-ca-certificates
 
-# TODO: DinD or DooD...
+# Install Docker CLI and DinD support
+RUN apk update && apk add --no-cache docker-cli sudo
 
 WORKDIR /home/node
 COPY --from=builder /compiled /usr/local/lib/node_modules/n8n
-COPY docker/images/n8n/docker-entrypoint.sh /
+COPY docker/images/n8n-bc/docker-entrypoint.sh /
 
 # Setup the Task Runner Launcher
 ARG TARGETPLATFORM

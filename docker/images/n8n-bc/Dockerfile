@@ -28,11 +28,12 @@ ENV NODE_ENV=production
 ARG N8N_RELEASE_TYPE=dev
 ENV N8N_RELEASE_TYPE=${N8N_RELEASE_TYPE}
 
-# TODO: install docker?
+# Install Docker CLI and DinD support
+RUN apk update && apk add --no-cache docker-cli sudo
 
 WORKDIR /home/node
 COPY --from=builder /compiled /usr/local/lib/node_modules/n8n
-COPY docker/images/n8n/docker-entrypoint.sh /
+COPY docker/images/n8n-bc/docker-entrypoint.sh /
 
 # Setup the Task Runner Launcher
 ARG TARGETPLATFORM

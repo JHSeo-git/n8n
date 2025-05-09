@@ -13,18 +13,20 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_USER=n8n
     ports:
-      - 15432:5432
+      - 25432:5432
     networks:
       - n8n-docker-network
-
   n8n:
     # build:
     #   context: ../../../.
     #   dockerfile: Dockerfile
     image: n8n-bc:latest
+    container_name: n8n-bc
     volumes:
       - n8n_bc_data:/home/node/.n8n
       - ./company.pem:/usr/local/share/ca-certificates/company.pem
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /Users/a78256/Documents/Workspaces/github.com/jhseo-git/n8n/docker/images/n8n-bc/docker-entrypoint.sh:/docker-entrypoint.sh
     env_file:
       - ../../../.env
     environment:
@@ -36,6 +38,7 @@ services:
       - 15678:5678
     networks:
       - n8n-docker-network
+    entrypoint: ['tini', '--', '/docker-entrypoint.sh']
 
 networks:
   n8n-docker-network:
