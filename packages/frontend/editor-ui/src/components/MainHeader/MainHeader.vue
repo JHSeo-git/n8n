@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import TabBar from '@/components/MainHeader/TabBar.vue';
 import WorkflowDetails from '@/components/MainHeader/WorkflowDetails.vue';
 import { useI18n } from '@/composables/useI18n';
 import { usePushConnection } from '@/composables/usePushConnection';
@@ -23,6 +22,7 @@ import type { RouteLocation, RouteLocationRaw } from 'vue-router';
 import { useRoute, useRouter } from 'vue-router';
 
 import { useLocalStorage } from '@vueuse/core';
+import { useCanvasOperations } from '@/composables/useCanvasOperations';
 
 const router = useRouter();
 const route = useRoute();
@@ -35,6 +35,7 @@ const workflowsStore = useWorkflowsStore();
 const executionsStore = useExecutionsStore();
 const settingsStore = useSettingsStore();
 const posthogStore = usePostHog();
+const { addNodes } = useCanvasOperations({ router });
 
 const activeHeaderTab = ref(MAIN_HEADER_TABS.WORKFLOW);
 const workflowToReturnTo = ref('');
@@ -216,6 +217,66 @@ async function navigateToExecutionsView(openInNewTab: boolean) {
 function hideGithubButton() {
 	githubButtonHidden.value = true;
 }
+
+function addAgentNode() {
+	// 예시: KnowledgeBasedRequestDTO 기반 파라미터 세팅
+	void addNodes([
+		{
+			type: 'n8n-nodes-base.httpRequest',
+			name: 'Agent HTTP Request',
+			parameters: {
+				requestMethod: 'POST',
+				url: 'http://refer-aipg-user-backend/playground/generation/knowledge-based/execute-stream',
+				jsonParameters: true,
+				sendBody: true,
+				options: {},
+				bodyParametersJson: JSON.stringify({
+					user_id: '',
+					question: '',
+					generationPrompt: '',
+					reference: '',
+					index_name: '',
+					gpt_version: 'gpt4',
+					prompt: '',
+					max_tokens: 2048,
+					top_k: 3,
+					search_method: 'hybrid',
+					parameters: '',
+				}),
+			},
+			position: [480, 120],
+		},
+	]);
+}
+
+function addPromptNode() {
+	// 예시: PromptCreateRequestDTO 기반 파라미터 세팅
+	void addNodes([
+		{
+			type: 'n8n-nodes-base.httpRequest',
+			name: 'Prompt HTTP Request',
+			parameters: {
+				requestMethod: 'POST',
+				url: 'http://refer-aipg-user-backend/prompt/create',
+				jsonParameters: true,
+				sendBody: true,
+				options: {},
+				bodyParametersJson: JSON.stringify({
+					promptSeq: null,
+					title: '',
+					description: '',
+					promptContent: '',
+					promptTagSeqs: [],
+					saveStatus: '',
+					deleted: 0,
+					isPublic: 1,
+					version: 1,
+				}),
+			},
+			position: [600, 120],
+		},
+	]);
+}
 </script>
 
 <template>
@@ -235,22 +296,58 @@ function hideGithubButton() {
 					:read-only="readOnly"
 				/>
 			</div>
-			<TabBar
-				v-if="onWorkflowPage"
-				:items="tabBarItems"
-				:model-value="activeHeaderTab"
-				@update:model-value="onTabSelected"
-			/>
+			<div style="display: flex; align-items: center; margin-bottom: 18px">
+				<div style="display: flex; align-items: center; gap: 12px; margin-left: 16px">
+					<button
+						class="$style.add-action-btn"
+						@click="addAgentNode"
+						title="에이전트 노드 추가"
+						style="
+							background: linear-gradient(90deg, #6a5af9 0%, #8f6ed5 100%);
+							color: #fff;
+							border-radius: 999px;
+							border: none;
+							font-size: 17px;
+							font-weight: 700;
+							height: 36px;
+							padding: 0 22px;
+							box-shadow: none;
+							letter-spacing: 1px;
+							cursor: pointer;
+						"
+					>
+						Agent
+					</button>
+					<button
+						class="$style.add-action-btn"
+						@click="addPromptNode"
+						title="프롬프트 노드 추가"
+						style="
+							background: linear-gradient(90deg, #6a5af9 0%, #8f6ed5 100%);
+							color: #fff;
+							border-radius: 999px;
+							border: none;
+							font-size: 17px;
+							font-weight: 700;
+							height: 36px;
+							padding: 0 22px;
+							box-shadow: none;
+							letter-spacing: 1px;
+							cursor: pointer;
+						"
+					>
+						Prompt
+					</button>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
 
 <style module lang="scss">
 .container {
-	display: flex;
-	position: relative;
 	width: 100%;
-	align-items: center;
+	z-index: 1000;
 }
 
 .main-header {
@@ -300,5 +397,34 @@ function hideGithubButton() {
 
 .github-button:hover .close-github-button {
 	display: block;
+}
+
+:global(.add-action-btn) {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: auto;
+	height: 44px;
+	padding: 0 32px;
+	margin: 0 12px 0 0;
+	border: none !important;
+	background: linear-gradient(90deg, #6a5af9 0%, #8f6ed5 100%) !important;
+	color: #fff !important;
+	border-radius: 999px !important;
+	font-size: 20px !important;
+	font-weight: 700 !important;
+	letter-spacing: 1px;
+	box-shadow: none !important;
+	cursor: pointer;
+	transition:
+		background 0.2s,
+		filter 0.2s;
+
+	&:hover {
+		filter: brightness(1.08);
+	}
+	&:active {
+		filter: brightness(0.95);
+	}
 }
 </style>
