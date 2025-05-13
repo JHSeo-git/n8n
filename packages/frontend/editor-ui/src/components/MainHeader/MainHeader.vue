@@ -23,6 +23,10 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useLocalStorage } from '@vueuse/core';
 import { useCanvasOperations } from '@/composables/useCanvasOperations';
+import { createCanvasConnectionHandleString } from '@/utils/canvasUtils';
+import { NodeConnectionTypes } from 'n8n-workflow';
+import type { INodeCredentials } from 'n8n-workflow';
+import type { AddedNode } from '@/Interface';
 
 const router = useRouter();
 const route = useRoute();
@@ -35,7 +39,7 @@ const workflowsStore = useWorkflowsStore();
 const executionsStore = useExecutionsStore();
 const settingsStore = useSettingsStore();
 const posthogStore = usePostHog();
-const { addNodes } = useCanvasOperations({ router });
+const { addNodes, addConnections } = useCanvasOperations({ router });
 
 const activeHeaderTab = ref(MAIN_HEADER_TABS.WORKFLOW);
 const workflowToReturnTo = ref('');
@@ -218,35 +222,438 @@ function hideGithubButton() {
 	githubButtonHidden.value = true;
 }
 
-function addAgentNode() {
-	// 예시: KnowledgeBasedRequestDTO 기반 파라미터 세팅
-	void addNodes([
+async function addAgentNode() {
+	const nodes = [
 		{
-			type: 'n8n-nodes-base.httpRequest',
-			name: 'Agent HTTP Request',
 			parameters: {
-				requestMethod: 'POST',
-				url: 'http://refer-aipg-user-backend/playground/generation/knowledge-based/execute-stream',
-				jsonParameters: true,
+				method: 'POST',
+				url: '=http://{{ $("Global Constants").item.json.constants.API_HOST }}:{{ $("Global Constants").item.json.constants.AGENT_IMAGE_PORT }}',
 				sendBody: true,
+				bodyParameters: {
+					parameters: [
+						{
+							name: 'message',
+							value: '={{ $("When chat message received").item.json.chatInput }}',
+						},
+					],
+				},
 				options: {},
-				bodyParametersJson: JSON.stringify({
-					user_id: '',
-					question: '',
-					generationPrompt: '',
-					reference: '',
-					index_name: '',
-					gpt_version: 'gpt4',
-					prompt: '',
-					max_tokens: 2048,
-					top_k: 3,
-					search_method: 'hybrid',
-					parameters: '',
-				}),
 			},
-			position: [480, 120],
+			type: 'n8n-nodes-base.httpRequest',
+			typeVersion: 4.2,
+			position: [0, -40] as [number, number],
+			name: 'HTTP Request',
+			alwaysOutputData: true,
 		},
-	]);
+		{
+			parameters: {},
+			type: 'n8n-nodes-globals.globalConstants',
+			typeVersion: 1,
+			position: [-880, 210] as [number, number],
+			name: 'Global Constants',
+		},
+		{
+			parameters: {
+				amount: 3,
+			},
+			type: 'n8n-nodes-base.wait',
+			typeVersion: 1.1,
+			position: [-220, 35] as [number, number],
+			name: 'Wait',
+		},
+		{
+			parameters: {
+				options: {},
+			},
+			type: '@n8n/n8n-nodes-langchain.chatTrigger',
+			typeVersion: 1.1,
+			position: [-1100, 210] as [number, number],
+			name: 'When chat message received',
+		},
+		{
+			parameters: {
+				command: '=docker stop {{ $("Global Constants").item.json.constants.AGENT_IMAGE_NAME }}',
+			},
+			type: 'n8n-nodes-base.executeCommand',
+			typeVersion: 1,
+			position: [660, 35] as [number, number],
+			name: 'docker stop',
+		},
+		{
+			parameters: {
+				command:
+					'=docker run -d --rm --name {{ $json.constants.AGENT_IMAGE_NAME }} -e AWS_ACCESS_KEY_ID={{ $json.constants.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY={{ $json.constants.AWS_SECRET_ACCESS_KEY }} -e AWS_REGION={{ $json.constants.AWS_REGION }} -p 80:{{ $json.constants.AGENT_IMAGE_PORT }} {{ $json.constants.AGENT_IMAGE_TAG }} ',
+			},
+			type: 'n8n-nodes-base.executeCommand',
+			typeVersion: 1,
+			position: [-660, 135] as [number, number],
+			name: 'docker run',
+			alwaysOutputData: true,
+		},
+		{
+			parameters: {
+				conditions: {
+					options: {
+						caseSensitive: true,
+						leftValue: '',
+						typeValidation: 'strict',
+						version: 2,
+					},
+					conditions: [
+						{
+							id: 'a6f914de-2183-409e-b8cc-4aac953f3bda',
+							leftValue: '={{ $json.error }}',
+							rightValue: '',
+							operator: {
+								type: 'string',
+								operation: 'exists',
+								singleValue: true,
+							},
+						},
+					],
+					combinator: 'and',
+				},
+				options: {},
+			},
+			type: 'n8n-nodes-base.if',
+			typeVersion: 2.2,
+			position: [-440, 135] as [number, number],
+			name: 'docker run 실패?',
+		},
+		{
+			parameters: {
+				conditions: {
+					options: {
+						caseSensitive: true,
+						leftValue: '',
+						typeValidation: 'strict',
+						version: 2,
+					},
+					conditions: [
+						{
+							id: 'c4b387d2-709a-479e-9e06-5cbf3a699d92',
+							leftValue: '={{ $json.message }}',
+							rightValue: '',
+							operator: {
+								type: 'object',
+								operation: 'exists',
+								singleValue: true,
+							},
+						},
+					],
+					combinator: 'and',
+				},
+				options: {},
+			},
+			type: 'n8n-nodes-base.if',
+			typeVersion: 2.2,
+			position: [220, -40] as [number, number],
+			name: '호출 성공?',
+		},
+		{
+			parameters: {
+				amount: 3,
+			},
+			type: 'n8n-nodes-base.wait',
+			typeVersion: 1.1,
+			position: [0, 410] as [number, number],
+			name: 'Wait1',
+		},
+		{
+			parameters: {
+				command: '=docker stop {{ $("Global Constants").item.json.constants.AGENT_IMAGE_NAME }}',
+			},
+			type: 'n8n-nodes-base.executeCommand',
+			typeVersion: 1,
+			position: [-220, 335] as [number, number],
+			name: 'docker clear',
+		},
+		{
+			parameters: {
+				conditions: {
+					options: {
+						caseSensitive: true,
+						leftValue: '',
+						typeValidation: 'strict',
+						version: 2,
+					},
+					conditions: [
+						{
+							id: 'd0b5b32f-2bc1-48b6-991d-bdb06bba29f7',
+							leftValue: '={{ $runIndex }}',
+							rightValue: 3,
+							operator: {
+								type: 'number',
+								operation: 'gt',
+							},
+						},
+					],
+					combinator: 'and',
+				},
+				options: {},
+			},
+			type: 'n8n-nodes-base.if',
+			typeVersion: 2.2,
+			position: [440, 110] as [number, number],
+			name: 'max retry?',
+		},
+	];
+
+	const addedNodes = await addNodes(nodes);
+	const nameToId: Record<string, string> = {};
+	addedNodes.forEach((node) => {
+		nameToId[node.name] = node.id;
+	});
+
+	// prefix로 id를 찾는 함수
+	const getNodeIdByPrefix = (prefix: string) => {
+		const entry = Object.entries(nameToId).find(([name]) => name.startsWith(prefix));
+		return entry ? entry[1] : undefined;
+	};
+
+	const rawConnections = [
+		{
+			source: getNodeIdByPrefix('When chat message received'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('Global Constants'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('Global Constants'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('docker run'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('docker run'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('docker run 실패?'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('docker run 실패?'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('docker clear'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('docker run 실패?'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 1,
+			}),
+			target: getNodeIdByPrefix('Wait'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 1 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('Wait'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('HTTP Request'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('HTTP Request'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('호출 성공?'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('호출 성공?'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('docker stop'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('호출 성공?'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 1,
+			}),
+			target: getNodeIdByPrefix('max retry?'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 1 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('max retry?'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('docker stop'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('max retry?'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 1,
+			}),
+			target: getNodeIdByPrefix('Wait'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 1 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('docker clear'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('Wait1'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		{
+			source: getNodeIdByPrefix('Wait1'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('Global Constants'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+	];
+
+	const connections = rawConnections.filter(
+		(conn): conn is (typeof rawConnections)[number] & { source: string; target: string } =>
+			typeof conn.source === 'string' && typeof conn.target === 'string',
+	);
+
+	await addConnections(connections);
 }
 
 function addPromptNode() {
@@ -276,6 +683,193 @@ function addPromptNode() {
 			position: [600, 120],
 		},
 	]);
+}
+
+async function addMcpNode() {
+	const nodes = [
+		{
+			parameters: { options: {} },
+			type: '@n8n/n8n-nodes-langchain.chatTrigger',
+			typeVersion: 1.1,
+			position: [0, 0] as [number, number],
+			name: 'When chat message received',
+			webhookId: 'f4aa73e3-58fd-49e0-a957-36fa8c0d821a',
+		},
+		{
+			parameters: { options: {} },
+			type: '@n8n/n8n-nodes-langchain.agent',
+			typeVersion: 1.9,
+			position: [320, 0] as [number, number],
+			name: 'AI Agent',
+		},
+		{
+			parameters: { model: '=us.anthropic.claude-3-7-sonnet-20250219-v1:0', options: {} },
+			type: '@n8n/n8n-nodes-langchain.lmChatAwsBedrock',
+			typeVersion: 1,
+			position: [220, 220] as [number, number],
+			name: 'AWS Bedrock Chat Model',
+			credentials: {
+				aws: {
+					id: 'k0pRy0nsF7mnJ1qv',
+					name: 'AWS account',
+				},
+			} as INodeCredentials,
+		},
+		{
+			parameters: {},
+			type: '@n8n/n8n-nodes-langchain.memoryBufferWindow',
+			typeVersion: 1.3,
+			position: [340, 220] as [number, number],
+			name: 'Simple Memory',
+		},
+		{
+			parameters: {},
+			type: 'n8n-nodes-mcp.mcpClientTool',
+			typeVersion: 1,
+			position: [460, 220] as [number, number],
+			name: 'my first mcp',
+			credentials: {
+				mcpClientApi: {
+					id: '9OabSNxzOTHwGrN7',
+					name: 'MCP Client (STDIO) account',
+				},
+			} as INodeCredentials,
+		},
+		{
+			parameters: {
+				operation: 'executeTool',
+				toolName:
+					'={{ $fromAI("toolname", "Populate this with the tool name from on list tools result") }}',
+				toolParameters:
+					'={{ $fromAI("toolargs", "Populate this with the tool name from on result") }}',
+			},
+			type: 'n8n-nodes-mcp.mcpClientTool',
+			typeVersion: 1,
+			position: [580, 220] as [number, number],
+			name: 'my first mcp - call',
+			credentials: {
+				mcpClientApi: {
+					id: '9OabSNxzOTHwGrN7',
+					name: 'MCP Client (STDIO) account',
+				},
+			} as INodeCredentials,
+		},
+	] as AddedNode[];
+
+	const addedNodes = await addNodes(nodes);
+	const nameToId: Record<string, string> = {};
+	addedNodes.forEach((node) => {
+		nameToId[node.name] = node.id;
+	});
+	const getNodeIdByPrefix = (prefix: string) => {
+		const entry = Object.entries(nameToId).find(([name]) => name.startsWith(prefix));
+		return entry ? entry[1] : undefined;
+	};
+
+	const rawConnections = [
+		// When chat message received -> AI Agent
+		{
+			source: getNodeIdByPrefix('When chat message received'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('AI Agent'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.Main,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.Main, index: 0 },
+				target: { type: NodeConnectionTypes.Main, index: 0 },
+			},
+		},
+		// AWS Bedrock Chat Model -> AI Agent (ai_languageModel)
+		{
+			source: getNodeIdByPrefix('AWS Bedrock Chat Model'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.AiLanguageModel,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('AI Agent'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.AiLanguageModel,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.AiLanguageModel, index: 0 },
+				target: { type: NodeConnectionTypes.AiLanguageModel, index: 0 },
+			},
+		},
+		// Simple Memory -> AI Agent (ai_memory)
+		{
+			source: getNodeIdByPrefix('Simple Memory'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.AiMemory,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('AI Agent'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.AiMemory,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.AiMemory, index: 0 },
+				target: { type: NodeConnectionTypes.AiMemory, index: 0 },
+			},
+		},
+		// my first mcp -> AI Agent (ai_tool)
+		{
+			source: getNodeIdByPrefix('my first mcp'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.AiTool,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('AI Agent'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.AiTool,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.AiTool, index: 0 },
+				target: { type: NodeConnectionTypes.AiTool, index: 0 },
+			},
+		},
+		// my first mcp - call -> AI Agent (ai_tool)
+		{
+			source: getNodeIdByPrefix('my first mcp - call'),
+			sourceHandle: createCanvasConnectionHandleString({
+				mode: 'outputs',
+				type: NodeConnectionTypes.AiTool,
+				index: 0,
+			}),
+			target: getNodeIdByPrefix('AI Agent'),
+			targetHandle: createCanvasConnectionHandleString({
+				mode: 'inputs',
+				type: NodeConnectionTypes.AiTool,
+				index: 0,
+			}),
+			data: {
+				source: { type: NodeConnectionTypes.AiTool, index: 0 },
+				target: { type: NodeConnectionTypes.AiTool, index: 0 },
+			},
+		},
+	];
+
+	const connections = rawConnections.filter(
+		(conn): conn is (typeof rawConnections)[number] & { source: string; target: string } =>
+			typeof conn.source === 'string' && typeof conn.target === 'string',
+	);
+
+	await addConnections(connections);
 }
 </script>
 
@@ -337,6 +931,26 @@ function addPromptNode() {
 						"
 					>
 						Prompt
+					</button>
+					<button
+						class="$style.add-action-btn"
+						@click="addMcpNode"
+						title="MCP 노드 추가"
+						style="
+							background: linear-gradient(90deg, #6a5af9 0%, #8f6ed5 100%);
+							color: #fff;
+							border-radius: 999px;
+							border: none;
+							font-size: 17px;
+							font-weight: 700;
+							height: 36px;
+							padding: 0 22px;
+							box-shadow: none;
+							letter-spacing: 1px;
+							cursor: pointer;
+						"
+					>
+						MCP
 					</button>
 				</div>
 			</div>
